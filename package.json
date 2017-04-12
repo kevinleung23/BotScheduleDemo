@@ -19,6 +19,7 @@
   "homepage": "https://github.com/KSLHacks/BotScheduleDemo#readme",
   "dependencies": {
     "botbuilder": "^3.7.0",
+    "dotenv": "^4.0.0",
     "restify": "^4.3.0"
   }
 }

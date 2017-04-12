@@ -38,3 +38,6 @@ jspm_packages
 
 # editor
 .vscode
+
+# secrets
+.env
