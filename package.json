@@ -1,0 +1,24 @@
+{
+  "name": "BotScheduleDemo",
+  "version": "1.0.0",
+  "description": "Demo chat bot to view speakers at an event (with and without LUIS)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KSLHacks/BotScheduleDemo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KSLHacks/BotScheduleDemo/issues"
+  },
+  "homepage": "https://github.com/KSLHacks/BotScheduleDemo#readme",
+  "dependencies": {
+    "botbuilder": "^3.7.0",
+    "restify": "^4.3.0"
+  }
+}
