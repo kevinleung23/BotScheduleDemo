@@ -39,26 +39,32 @@ dialog.matches('Greeting', [
 
 dialog.matches('SearchByDay', [
   function (session, results) {
-    session.beginDialog('/SearchDay')
+    session.beginDialog('/SearchDay', results)
   }
 ])
 
 dialog.matches('SearchByName', [
   function (session, results) {
-    session.beginDialog('/SearchName')
+    session.beginDialog('/SearchName', results)
   }
 ])
 
 dialog.matches('SearchByTime', [
   function (session, results) {
-    session.beginDialog('/SearchTime')
+    session.beginDialog('/SearchTime', results)
   }
 ])
 
-dialog.matches('None', [
+dialog.matches('MainMenu', [
+  function (session, results) {
+    session.beginDialog('/mainMenu', results)
+  }
+])
+
+dialog.onDefault([
   function (session, results) {
     session.send('Sorry.. I did\'t understand that. Let me show you what I can do.')
-    session.beginDialog('/MainMenu')
+    session.beginDialog('/mainMenu', results)
   }
 ])
 
@@ -66,7 +72,8 @@ dialog.matches('None', [
 // Bots Dialogs
 // =========================================================
 
-bot.dialog('/MainMenu', [
+// present the user with a main menu of choices they can select from
+bot.dialog('/mainMenu', [
   function (session, results) {
     builder.Prompts.choice(session, 'I can do any of these, pick one!', ['Search Sessions By Day', 'Search Sessions By Name', 'Search Sessions By Time'])
   },
@@ -88,23 +95,72 @@ bot.dialog('/MainMenu', [
   }
 ])
 
+// either extract the LUIS entity or ask the user for a day to search -- display the results
 bot.dialog('/SearchDay', [
+  function (session, results, next) {
+    // check if results.entities is undefiend
+    if (typeof results !== 'undefined' && results.entities) {
+      var day = builder.EntityRecognizer.findEntity(results.entities, 'day')
+      if (!day) {
+        builder.Prompts.text(session, 'What day would you like to search?')
+      } else {
+        next({ response: day.entity })
+      }
+    } else {
+      // prompt the user for the text manually
+      builder.Prompts.text(session, 'What day would you like to search?')
+    }
+  },
   function (session, results) {
-    session.send('SEARCH BY DAY')
+    if (results.response) {
+      session.send('Searching for %s\'s schedule. One moment.', results.response)
+    }
     session.endDialog()
   }
 ])
 
+// either extract the LUIS entity or ask the user for a name to search -- display the results
 bot.dialog('/SearchName', [
+  function (session, results, next) {
+    if (typeof results !== 'undefined' && results.entities) {
+      var name = builder.EntityRecognizer.findEntity(results.entities, 'firstName')
+      if (!name) {
+        builder.Prompts.text(session, 'What name would you like to search?')
+      } else {
+        next({ response: name.entity })
+      }
+    } else {
+      // prompt the user for the text manually
+      builder.Prompts.text(session, 'What name would you like to search?')
+    }
+  },
   function (session, results) {
-    session.send('SEARCH BY NAME')
+    if (results.response) {
+      session.send('Searching for %s in the schedule. One moment.', results.response)
+    }
     session.endDialog()
   }
 ])
 
+// either extract the LUIS entity or ask the user for a time to search -- display the results
 bot.dialog('/SearchTime', [
+  function (session, results, next) {
+    if (typeof results !== 'undefined' && results.entities) {
+      var time = builder.EntityRecognizer.findEntity(results.entities, 'time')
+      if (!time) {
+        builder.Prompts.text(session, 'What time would you like to search?')
+      } else {
+        next({ response: time.entity })
+      }
+    } else {
+      // prompt the user for the text manually
+      builder.Prompts.text(session, 'What time would you like to search?')
+    }
+  },
   function (session, results) {
-    session.send('SEARCH BY TIME')
+    if (results.response) {
+      session.send('Searching today\'s schedule for %s session. One moment.', results.response)
+    }
     session.endDialog()
   }
 ])
