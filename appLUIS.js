@@ -28,5 +28,83 @@ var dialog = new builder.IntentDialog({recognizers: [recognizer]})
 bot.dialog('/', dialog)
 
 // =========================================================
+// LUIS Dialogs
+// =========================================================
+
+dialog.matches('Greeting', [
+  function (session, results) {
+    session.send('Hello GOTO Conference! Can I help find a session for you?')
+  }
+])
+
+dialog.matches('SearchByDay', [
+  function (session, results) {
+    session.beginDialog('/SearchDay')
+  }
+])
+
+dialog.matches('SearchByName', [
+  function (session, results) {
+    session.beginDialog('/SearchName')
+  }
+])
+
+dialog.matches('SearchByTime', [
+  function (session, results) {
+    session.beginDialog('/SearchTime')
+  }
+])
+
+dialog.matches('None', [
+  function (session, results) {
+    session.send('Sorry.. I did\'t understand that. Let me show you what I can do.')
+    session.beginDialog('/MainMenu')
+  }
+])
+
+// =========================================================
 // Bots Dialogs
 // =========================================================
+
+bot.dialog('/MainMenu', [
+  function (session, results) {
+    builder.Prompts.choice(session, 'I can do any of these, pick one!', ['Search Sessions By Day', 'Search Sessions By Name', 'Search Sessions By Time'])
+  },
+  function (session, results) {
+    switch (results.response.index) {
+      case 0:
+        // Initiate "Search By Day" dialog
+        session.beginDialog('/SearchDay')
+        break
+      case 1:
+        // Initiate "Search By Name" dialog
+        session.beginDialog('/SearchName')
+        break
+      case 2:
+        // Initiate "Search By Time" dialog
+        session.beginDialog('/SearchTime')
+        break
+    }
+  }
+])
+
+bot.dialog('/SearchDay', [
+  function (session, results) {
+    session.send('SEARCH BY DAY')
+    session.endDialog()
+  }
+])
+
+bot.dialog('/SearchName', [
+  function (session, results) {
+    session.send('SEARCH BY NAME')
+    session.endDialog()
+  }
+])
+
+bot.dialog('/SearchTime', [
+  function (session, results) {
+    session.send('SEARCH BY TIME')
+    session.endDialog()
+  }
+])
