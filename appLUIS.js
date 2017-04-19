@@ -1,6 +1,14 @@
 require('dotenv').config()
 var restify = require('restify')
 var builder = require('botbuilder')
+var azure = require('azure-storage')
+var lodash = require('lodash')
+
+// =========================================================
+// Azure Table Setup
+// =========================================================
+
+var tableSvc = azure.createTableService('azurecredits', process.env.AZURE_STORAGE)
 
 // =========================================================
 // Bot Setup
@@ -72,6 +80,8 @@ dialog.onDefault([
 // Bots Dialogs
 // =========================================================
 
+var data = {}
+
 // present the user with a main menu of choices they can select from
 bot.dialog('/mainMenu', [
   function (session, results) {
@@ -115,34 +125,21 @@ bot.dialog('/SearchDay', [
     if (results.response) {
       session.send('Searching for %s\'s schedule. One moment.', results.response)
     }
-
-    // search table for data
-    var data = {
-      firstName: 'Gabby',
-      lastName: 'Crevecoeur',
-      cofirstName: 'Kevin',
-      colastName: 'Leung',
-      day: 'Monday',
-      time: '1140',
-      talk: 'Breaking into Bots',
-      link: 'www.thisisntreal.com',
-      image: 'https://bot-framework.azureedge.net/bot-icons-v1/bot-framework-default-7.png',
-      abstract: 'Step into the world of Conversational Bots. Taking over platforms one by one, conversational bots are becoming the newest applications wanted and needed by consumers everyday.'
-    }
-
+    // capitalize to query DB
+    results.response = lodash.capitalize(results.response)
+    results.type = 'day'
     // display card with data
-    var msg = new builder.Message(session)
-      .textFormat(builder.TextFormat.xml)
-      .attachments([
-        new builder.ThumbnailCard(session)
-              .title(data.talk)
-              .subtitle(data.firstName + ' ' + data.lastName + ' & ' + data.cofirstName + ' ' + data.colastName + ' | ' + data.day + ' at ' + data.time)
-              .text(data.abstract)
-              .images([builder.CardImage.create(session, data.image)])
-              .tap(builder.CardAction.openUrl(session, data.link))
-      ])
-    session.send(msg)
-    session.endDialog()
+    RetrieveSchedule(session, results, function (session) {
+      // test if data is populated (results found)
+      if (data.isSuccess) {
+        // display card with data
+        var msg = DisplayCardData(session)
+        session.send(msg)
+      } else {
+        session.send('Sorry.. no results matched your search. Please try again!')
+      }
+      session.endDialog()
+    })
   }
 ])
 
@@ -165,7 +162,25 @@ bot.dialog('/SearchName', [
     if (results.response) {
       session.send('Searching for %s in the schedule. One moment.', results.response)
     }
-    session.endDialog()
+    // capitalize to query DB
+    results.response = lodash.capitalize(results.response)
+    if ((results.response === 'Kevin') || (results.response === 'Hao') || (results.response === 'David')) {
+      results.type = 'firstName'
+    } else {
+      results.type = 'cofirstName'
+    }
+    // display card with data
+    RetrieveSchedule(session, results, function (session) {
+      // test if data is populated (results found)
+      if (data.isSuccess) {
+        // display card with data
+        var msg = DisplayCardData(session)
+        session.send(msg)
+      } else {
+        session.send('Sorry.. no results matched your search. Please try again!')
+      }
+      session.endDialog()
+    })
   }
 ])
 
@@ -188,6 +203,67 @@ bot.dialog('/SearchTime', [
     if (results.response) {
       session.send('Searching today\'s schedule for %s session. One moment.', results.response)
     }
-    session.endDialog()
+    results.type = 'time'
+    // display card with data
+    RetrieveSchedule(session, results, function (session) {
+      // test if data is populated (results found)
+      if (data.isSuccess) {
+        // display card with data
+        var msg = DisplayCardData(session)
+        session.send(msg)
+      } else {
+        session.send('Sorry.. no results matched your search. Please try again!')
+      }
+      session.endDialog()
+    })
   }
 ])
+
+// =========================================================
+// Helper Functions - Query Azure Table
+// =========================================================
+
+function RetrieveSchedule (session, response, onQueryFinish, next) {
+  var query = new azure.TableQuery()
+    .top(1)
+    .where(response.type + ' eq ?', response.response)
+
+  tableSvc.queryEntities('GoTo', query, null, function (error, result, response) {
+    if ((!error) && (result.entries[0])) {
+      data.isSuccess = true
+      // Manipulate results into JSON object for card
+      data.firstName = result.entries[0].firstName._
+      data.lastName = result.entries[0].lastName._
+      data.day = result.entries[0].day._
+      data.time = result.entries[0].time._
+      data.talk = result.entries[0].talk._
+      data.link = result.entries[0].link._
+      data.image = result.entries[0].image._
+      data.abstract = result.entries[0].abstract._
+      data.cofirstName = result.entries[0].cofirstName._
+      data.colastName = result.entries[0].colastName._
+
+      onQueryFinish(session)
+    //  next()
+    } else {
+      data.isSuccess = false
+      console.log(error)
+      onQueryFinish(session)
+    }
+  })
+}
+
+function DisplayCardData (session) {
+  // display card with data
+  var msg = new builder.Message(session)
+    .textFormat(builder.TextFormat.xml)
+    .attachments([
+      new builder.ThumbnailCard(session)
+            .title(data.talk)
+            .subtitle(data.firstName + ' ' + data.lastName + ' & ' + data.cofirstName + ' ' + data.colastName + ' | ' + data.day + ' at ' + data.time)
+            .text(data.abstract)
+            .images([builder.CardImage.create(session, data.image)])
+            .tap(builder.CardAction.openUrl(session, data.link))
+    ])
+  return msg
+}
