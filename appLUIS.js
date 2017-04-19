@@ -115,6 +115,33 @@ bot.dialog('/SearchDay', [
     if (results.response) {
       session.send('Searching for %s\'s schedule. One moment.', results.response)
     }
+
+    // search table for data
+    var data = {
+      firstName: 'Gabby',
+      lastName: 'Crevecoeur',
+      cofirstName: 'Kevin',
+      colastName: 'Leung',
+      day: 'Monday',
+      time: '1140',
+      talk: 'Breaking into Bots',
+      link: 'www.thisisntreal.com',
+      image: 'https://bot-framework.azureedge.net/bot-icons-v1/bot-framework-default-7.png',
+      abstract: 'Step into the world of Conversational Bots. Taking over platforms one by one, conversational bots are becoming the newest applications wanted and needed by consumers everyday.'
+    }
+
+    // display card with data
+    var msg = new builder.Message(session)
+      .textFormat(builder.TextFormat.xml)
+      .attachments([
+        new builder.ThumbnailCard(session)
+              .title(data.talk)
+              .subtitle(data.firstName + ' ' + data.lastName + ' & ' + data.cofirstName + ' ' + data.colastName + ' | ' + data.day + ' at ' + data.time)
+              .text(data.abstract)
+              .images([builder.CardImage.create(session, data.image)])
+              .tap(builder.CardAction.openUrl(session, data.link))
+      ])
+    session.send(msg)
     session.endDialog()
   }
 ])
