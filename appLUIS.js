@@ -63,6 +63,12 @@ dialog.matches('SearchByTime', [
   }
 ])
 
+dialog.matches('EndConvo', [
+  function (session, results) {
+    session.send('Have a great GOTO Conference! Bye!')
+  }
+])
+
 dialog.matches('MainMenu', [
   function (session, results) {
     session.beginDialog('/mainMenu', results)
@@ -225,7 +231,7 @@ bot.dialog('/SearchTime', [
 
 function RetrieveSchedule (session, response, onQueryFinish, next) {
   var query = new azure.TableQuery()
-    .top(1)
+    .top(3)
     .where(response.type + ' eq ?', response.response)
 
   tableSvc.queryEntities('GoTo', query, null, function (error, result, response) {
