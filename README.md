@@ -12,7 +12,7 @@ See `app.js`
 See `appLUIS.js`
 
 
-## Building The Chat Bot -- W/O LUIS
+# Building The Chat Bot -- W/O LUIS
 
 
 ### Prerequisites
@@ -181,13 +181,12 @@ ex:
 As you noticed in the '/subject' example and other functions as well, many times users are asked for an answer, in which we need the data, there is a line that states `builder.Prompts.text()`. The bot framework has built in prompts available that can be used to collect input from a user.
 
 Different return types of prompts available:
-`builder.Prompts.text(session, "What's your name?");`
-`builder.Prompts.number(session, "How many do you want?");`
-`builder.Prompts.time(session, "When is your appointment?");`
-`builder.Prompts.choice(session, "Which color?", "red|green|blue");`
 
+      builder.Prompts.text(session, "What's your name?");
+      builder.Prompts.number(session, "How many do you want?");
+      builder.Prompts.time(session, "When is your appointment?");
+      builder.Prompts.choice(session, "Which color?", "red|green|blue");
 
-        );
         
 #### Azure Table Storage API
 We also used Azure Table Storage to store the data for the sessions. We installed the Azure Storage node module by running `npm install --save azure-storage` and input it into the code with `var azure = require('azure-storage')` along with the other node modules.
@@ -254,3 +253,66 @@ If you noticed, your web app has no code to know what exactly to run. First in y
 ## Step 5: Testing Your Bot
  
 If you have a Windows Machine! You can test your bot on the Bot Emulator. You can install it here https://docs.botframework.com/en-us/tools/bot-framework-emulator/ ! You will need your APP ID and APP Password to enter it into the emulator and get to testing :)
+
+# Adding Intelligence with LUIS
+Note: You should read through and understand the steps above before implementing LUIS. There is a lot of overlap on how dialogs and conversations are created so please read!
+
+## Step 1: Obtaining a LUIS Subscription Key
+Head over to your [Azure Portal](https://portal.azure.com/) and login. If you do not have an account, you can sign up for a free trial with free azure credits added to your account. (Regardless, we will be using the free tier so LUIS will not be consuming credits).
+
+![Azure LUIS](./images/azure_luis.png)
+- Click on 'Cognitive Services' and click 'Create' on the next blade that shows up.
+
+![Azure LUIS Crate](./images/azure_luis_create.png)
+- Fill in the required text boxes
+- For API Type.. be sure to select LUIS! (in the future this is how you create other Cognitive Service Keys)
+- Resource Type can be any new or existing.
+- Click 'Create' on the bottom
+
+![Azure LUIS Key](./images/azure_luis_key.png)
+- Open up your new Azure service (which can be found under 'All Resources')
+- Select 'Key' under Resource Management and you now have access to two keys. You will only need one.
+
+## Step 2: Building your LUIS Model
+The first thing we need to do is create our Language Understanding Intelligence Service (LUIS) Model. We can do this by heading over to [luis.ai](https://www.luis.ai/). You will need a Microsoft account to login but will not have to pay for the free tier subscription.
+
+![Adding LUIS Key](./images/luis_addkey.png)
+- Navigate into 'My Keys' and follow the illistration using the key you created in step 1. You will be able to use this key when we create the model.
+
+After we have added the key, navigate to 'My Apps' and click 'New App'. Fill in the Name, language, description and in the dropdown menu for keys, select the one we just added. Finish with 'Create'
+
+## Step 3: Training and Publishing
+We can new create the intents, entities, entity phrase lists as well as view all of our statistics on the LUIS app dashboard. The first time logging in, you will be prompted with a tutorial on how to use LUIS.
+
+After we have trained LUIS, we are ready to test, train and publish our app.
+
+    Note: Everytime you train your model and are satisfied, make sure to re-publish. The changes to the model will NOT take effect until you publish the model again. Don't worry.. the endpoint will not change when you re-publish.
+
+Under the 'Publish App' options, we can see the endpoint url. This gives us all the information we need for our code. Inside the endpoint url, it will include our LUIS Model ID as well as our subscription key
+
+https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/<LUIS-MODEL-ID-HERE>?subscription-key=<LUIS-Model-KEY_Here>&timezoneOffset=0&verbose=true&q=
+
+## Step 4: Adding LUIS into your code
+Please refer to `appLUIS.js` if you need a reference.
+
+We will need to set up the recognizer for LUIS in our bot setup with the following code
+
+    // Setup LUIS connection
+    var model = 'https://api.projectoxford.ai/luis/v1/application?id=' + process.env.LUIS_ID + '&subscription-key=' + process.env.LUIS_KEY + '&verbose=true'
+    var recognizer = new builder.LuisRecognizer(model)
+    var dialog = new builder.IntentDialog({recognizers: [recognizer]})
+    bot.dialog('/', dialog)
+
+You will notice `var model` holds our LUIS endpoint with our model and key. You can either hardcode these values are put them in environmental variables like I have done in this project to hide the keys from prying eyes!
+
+The last step is to set up the code to run when LUIS returns with the specific intent based on our model:
+
+    dialog.matches('Greeting', [
+      function (session, results) {
+        session.send('Hello GOTO Conference! Can I help find a session for you?')
+      }
+    ])
+
+`bot.dialog('/', dialog)` ensures that anything the user responds, it will hit the 'root' dialog. We then have `dialog.mathes()` which will check for the LUIS intent passed back.. in this case we define the 'Greeting' intent.
+
+    Important: The string in `dialog.matches()` is case sensitive and must match the LUIS model intent exactly.
